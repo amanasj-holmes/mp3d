@@ -1,7 +1,10 @@
 # mp3d
 R package to create a 3D hill of vision plot from raw MAIA txt data file
 
-install R package as shown below 
+
+
+install R package as shown below:
+
 
 library(devtools)
 install_github('amanasj/mp3d')
