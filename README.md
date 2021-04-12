@@ -7,8 +7,11 @@ install R package as shown below:
 
 
 library(devtools)
+
 install_github('amanasj/mp3d')
+
 library(mp3d)
+
 
 mp3d("filepath/to/txt/file")
 
