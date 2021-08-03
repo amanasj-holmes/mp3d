@@ -210,7 +210,7 @@ mp3d <- function(filepath){
   #################### 3d plot ################################
   col_tps <- palette[cut(tps$z, breaks = b)]   #factorise the different colours on the 3D plot
   plot_3D_tpsvol <-  rgl::persp3d(tps$x,tps$y,tps$z, color=col_tps,
-                                  xlim = c(-10,10), ylim = c(-10,10), zlim = c(0,40),
+                                  xlim = c(xmin,xmax), ylim = c(ymin,ymax), zlim = c(0,40),
                                   xlab ="",ylab ="", zlab ="", axes=F, specular="gray60",
                                   sub="", main="", alpha = 1,
                                   aspect = c(100, 100, 40))  # changes axis aspect ratios
