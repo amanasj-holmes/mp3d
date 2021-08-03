@@ -41,7 +41,12 @@ mp3d <- function(filepath){
   #############################################################
   ############# specify coordinates of interest ###############
   #############################################################
-  coord <- coord_cartesian(xlim=c(-13, 13), ylim=c(-13, 13))
+  xmin <- min(data$x)-2
+  xmax <- max(data$x)+2
+  ymin <- min(data$y)-2
+  ymax <- max(data$y)+2
+  coord <- coord_cartesian(xlim=c(xmin,xmax), ylim=c(ymin,ymax))
+  #coord <- coord_cartesian(xlim=c(-13, 13), ylim=c(-13, 13))
   #############################################################
   ########### segemented analysis #############################
   ### use eccentricity to specify regions
