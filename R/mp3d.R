@@ -21,9 +21,16 @@ mp3d <- function(filepath){
   library(filenamer)
   library(data.table)
 
-
+  
+  
+######  use this to find the string containing the headers for the dataframe of interest
+text <- readLines(filepath)
+rownumber <- grep("^ID\tx_deg\ty_deg", text)
+rownumber = rownumber-1
+  
+  
   data0 <- read.table(filepath,
-                      header =T,stringsAsFactors = F, skip=48)
+                      header =T,stringsAsFactors = F, skip=rownumber)
 
 
   data <- data0[,c("ID","x_deg","y_deg","Threshold")]
