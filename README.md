@@ -15,3 +15,6 @@ library(mp3d)
 
 mp3d("filepath/to/txt/file")
 
+
+
+DOI for code   -   DOI: 10.5281/zenodo.7352064
