@@ -2,8 +2,10 @@
 #' @export
 #' @param filepath file path to microperimetry file
 #'
-mp3d <- function(filepath){
+#'
 
+mp3d <- function(filepath){
+  
   library(ggplot2)
   library(plyr)
   library(concaveman)
@@ -20,19 +22,19 @@ mp3d <- function(filepath){
   library(openxlsx)
   library(filenamer)
   library(data.table)
-
   
   
-######  use this to find the string containing the headers for the dataframe of interest
-text <- readLines(filepath)
-rownumber <- grep("^ID\tx_deg\ty_deg", text)
-rownumber = rownumber-1
+  
+  ######  use this to find the string containing the headers for the dataframe of interest
+  text <- readLines(filepath)
+  rownumber <- grep("^ID\tx_deg\ty_deg", text)
+  rownumber = rownumber-1
   
   
   data0 <- read.table(filepath,
                       header =T,stringsAsFactors = F, skip=rownumber)
-
-
+  
+  
   data <- data0[,c("ID","x_deg","y_deg","Threshold")]
   colnames(data) <- c("ID", "x","y","thresh")
   #### remove blindspot test
@@ -41,10 +43,10 @@ rownumber = rownumber-1
   data$y <- data$y*(-1)
   #### order the rows
   data <- data[with(data, order((data$y), (data$x))), ]
-
-
+  
+  
   #-------------------------------------------------------------
-
+  
   #############################################################
   ############# specify coordinates of interest ###############
   #############################################################
@@ -79,10 +81,10 @@ rownumber = rownumber-1
   MAIAmeanthresh[MAIAmeanthresh<0] <- 0  ## if resulting MS is <0 report back as MS=0dB
   MAIAmeanthresh = formatC(MAIAmeanthresh, digits = 1,
                            format = "f")   ## report to 1 decimal place
-
+  
   #central4 <- rbind.data.frame(data0[1:4,])
   #MAIAmeanthresh_central4 <- mean(central4$thresh)
-
+  
   #############################################################
   ###### colour scheme and legend breaks to match MAIA ########
   #############################################################
@@ -101,12 +103,12 @@ rownumber = rownumber-1
           "13","14","15","16","17","18","19","20","21","22","23",
           "24","25","26","27","28","29","30","31","32","33","34",
           "35","36")
-
+  
   ### factorise the thresholds to categorise into legend values
   data$thresh_f <- cut(data$thresh, breaks = b, right = FALSE)
   my_breaks <- levels(data$thresh_f)
   levels(data$thresh_f)[levels(data$thresh_f)=="0.09"] <- "0" #this doesn't seem to do anything??
-
+  
   #===========================================================
   #--------------- pointmap Plot Theme -----------------------
   theme <- theme_bw()+theme(
@@ -123,10 +125,11 @@ rownumber = rownumber-1
                               margin = margin(b = -10))
   )+ theme(aspect.ratio=1)
   #===========================================================
-
+  
   #### create convex hull just for visualisation purpose - Fields does this automatically
   hull <- data %>%
     slice(chull(x, y))
+
   ######################## PLOTS ##############################
   #############################################################
   #####################################
@@ -134,9 +137,10 @@ rownumber = rownumber-1
   #####################################
   #jpeg(filename = "plot-%d.jpeg",
   #     width=3000, height=2000, res = 350)
+  
   pointmap <-  ggplot(data, aes(x=x, y=y, colour=thresh_f)) +
     geom_point(size=1.5) +
-    #  geom_point(data = hull, col="darkblue", fill=NA)+  ## visualise convex/concave hull points
+    #geom_point(data = hull, col="darkblue", fill=NA)+  ## visualise convex/concave hull points
     geom_polygon(data = hull, col="darkblue", fill=NA)+ ## visualise convex/concave hull line
     scale_colour_manual(values=palette, lab=lab, drop=F,
                         name="[dB]")+
@@ -147,14 +151,16 @@ rownumber = rownumber-1
                                                   size = 3.5)))+
     theme +
     coord
-  print(pointmap)
+  pointmap <- pointmap + labs(x = "x (degrees)", y = "y (degrees)")+
+                          ggtitle(paste("MAIA MS =",MAIAmeanthresh,"(dB)"))+
+                                  theme(plot.title = element_text(vjust = -2))
   #dev.off()
-
-
+  
+  
   ##################################
   ##### generate heatmap and 3D map
   ##################################
-
+  
   #########################################################
   #------------- TPS interpolation below ---------------
   #----------------------------------------------------------
@@ -163,12 +169,14 @@ rownumber = rownumber-1
   ####### use Thin Plate Spline from Fields package #########
   nx<-400
   ny<-400
-
+  
   df <- nrow(data1)
-  tps_int <- fields::Tps(data.frame(data$x,data$y),
+  tps_int <- fields::Tps (data.frame(data$x,data$y),
                          data$thresh, m=2, df=df)
   #                      data$thresh, theta = 2500) # cool graphics # use fastTps
   tps <- predictSurface(tps_int, nx=nx, ny=ny)
+
+  
   ### following 3 lines remove possible artifacts
   tps$z[tps$z<0] <- 0
   tps$z[tps$z==0] <- 1e-04
@@ -203,25 +211,29 @@ rownumber = rownumber-1
   volume_tps <- sum(integrand_tps, na.rm=T) * cell_size
   volume_tps = formatC(volume_tps, digits = 2, format = "f")
   #-----------------------------------------------------------
-
-
+  
   #===========================================================
   ############ 2d heatmap plot with MS value ########################
   #============================================================
   #jpeg(filename = "plot-%d.jpeg",
   #    width=3000, height=2000, res = 600)
-  #print(plot_tps)+labs(x = "x (degrees)", y = "y (degrees)")+
-  #    ggtitle(paste("MAIA MS =",MAIAmeanthresh,"(dB)"))
+  plot_tps <- plot_tps + labs(x = "x (degrees)", y = "y (degrees)")+
+                          ggtitle(paste("Vol =",volume_tps, "(dB-degrees^2)",
+                                        "\n MAIA MS =",MAIAmeanthresh,"dB"))+
+                                          theme(plot.title = element_text(vjust = -5))
   #dev.off()
   #============================================================
   #################### 3d plot ################################
+  
+  plot_3d <- function(tps,xmin,xmax,ymin,ymax,volume_tps,MAIAmeanthresh){ 
+    
   col_tps <- palette[cut(tps$z, breaks = b)]   #factorise the different colours on the 3D plot
   plot_3D_tpsvol <-  rgl::persp3d(tps$x,tps$y,tps$z, color=col_tps,
                                   xlim = c(xmin,xmax), ylim = c(ymin,ymax), zlim = c(0,40),
                                   xlab ="",ylab ="", zlab ="", axes=F, specular="gray60",
                                   sub="", main="", alpha = 1,
                                   aspect = c(100, 100, 40))  # changes axis aspect ratios
-
+  
   ### create matrix which dictates the initial viewpoint
   #### view for pathology composite
   #customview = matrix(c(0.951,-0.235,0.202,0,0.044,0.747,0.662,0,-0.306,-0.621,0.720,0,0,0,0,1), # the data elements
@@ -240,25 +252,34 @@ rownumber = rownumber-1
   title3d(ylab = "y (degrees)", line=3, cex=1.2)
   mtext3d("[dB]", "z-+", line = 4, cex=1.2)
   par3d(windowRect = c(0, 31, 769, 679))   # change scale of display window for 3D plot
-
+  
   #userMatrix<-par3d()$userMatrix
   #windowRect<-par3d()$windowRect
-
+  
   #### print volume calculated onto plot title separately
   bgplot3d({
     plot.new()
     title(main = paste("Vol =",volume_tps, "(dB-degrees^2)",
                        "\n MAIA MS =",MAIAmeanthresh,"dB"),
-          line=-6, cex.main=1.9)
+                                    line=-6, cex.main=1.9)
   })
 
-}
+  }
 
+  
+      interactive_plot <- plot_3d(tps,xmin,xmax,ymin,ymax,volume_tps,MAIAmeanthresh)
+
+
+      
+        # Return
+  return(list(interactive_plot, 
+              pointmap, 
+              plot_tps))
+  
+}
 
 
 
 #################### End of program #############################
 #############################################################
 #############################################################
-
-
